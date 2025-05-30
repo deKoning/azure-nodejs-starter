@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-logo">
+                <i class="fas fa-cloud"></i> Azure App
+            </h1>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/about" class="nav-link active">About</a></li>
+                <li><a href="/api/status" class="nav-link">API Status</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="about-section">
+                <h1><i class="fas fa-info-circle"></i> About This Application</h1>
+                <p class="lead"><%= description %></p>
+                
+                <div class="tech-stack">
+                    <h2>Technology Stack</h2>
+                    <div class="tech-list">
+                        <div class="tech-item">
+                            <i class="fab fa-node-js"></i>
+                            <span>Node.js</span>
+                        </div>
+                        <div class="tech-item">
+                            <i class="fas fa-route"></i>
+                            <span>Express.js</span>
+                        </div>
+                        <div class="tech-item">
+                            <i class="fas fa-file-code"></i>
+                            <span>EJS Templates</span>
+                        </div>
+                        <div class="tech-item">
+                            <i class="fab fa-microsoft"></i>
+                            <span>Azure App Service</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="features">
+                    <h2>Features</h2>
+                    <ul>
+                        <li><i class="fas fa-check"></i> Responsive web design</li>
+                        <li><i class="fas fa-check"></i> RESTful API endpoints</li>
+                        <li><i class="fas fa-check"></i> Modern CSS with animations</li>
+                        <li><i class="fas fa-check"></i> Optimized for Azure deployment</li>
+                        <li><i class="fas fa-check"></i> Environment-aware configuration</li>
+                    </ul>
+                </div>
+
+                <div class="getting-started">
+                    <h2>Getting Started</h2>
+                    <p>To customize this application:</p>
+                    <ol>
+                        <li>Clone the repository from GitHub</li>
+                        <li>Install dependencies with <code>npm install</code></li>
+                        <li>Run locally with <code>npm run dev</code></li>
+                        <li>Deploy to Azure using GitHub Actions or Azure CLI</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2024 Azure Node.js App. Built with ❤️ and deployed on Azure.</p>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
