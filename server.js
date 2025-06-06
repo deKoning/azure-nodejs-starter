@@ -33,18 +33,85 @@ app.use(express.urlencoded({ extended: true }));
 
 // ===== ADD THIS MIDDLEWARE AFTER app = express() BUT BEFORE YOUR ROUTES =====
 
+// REPLACE your existing middleware with this updated version
 app.use((req, res, next) => {
-  // Track every page visit
+  console.log(`Received request: ${req.method} ${req.path}`);
+  
+  let userInfo = null;
+  
+  // Extract user info from App Service Authentication headers
+  try {
+    // Check for the main authentication header
+    if (req.headers['x-ms-client-principal']) {
+      const principalData = Buffer.from(req.headers['x-ms-client-principal'], 'base64').toString();
+      const principal = JSON.parse(principalData);
+      
+      console.log('Raw principal data:', principal); // Debug log
+      
+      userInfo = {
+        userId: principal.userId || principal.oid || principal.sub,
+        userEmail: principal.userDetails || principal.claims?.find(c => c.typ === 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress')?.val,
+        userName: principal.userDetails?.split('@')[0] || principal.claims?.find(c => c.typ === 'name')?.val || principal.claims?.find(c => c.typ === 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name')?.val,
+        displayName: principal.claims?.find(c => c.typ === 'http://schemas.microsoft.com/identity/claims/displayname')?.val,
+        principalName: principal.userDetails,
+        authProvider: principal.identityProvider || 'aad'
+      };
+      
+      console.log('✅ Extracted user info:', userInfo);
+    }
+    // Fallback: Check other authentication headers
+    else if (req.headers['x-ms-client-principal-name']) {
+      userInfo = {
+        userId: req.headers['x-ms-client-principal-id'] || 'unknown',
+        userEmail: req.headers['x-ms-client-principal-name'],
+        userName: req.headers['x-ms-client-principal-name']?.split('@')[0] || 'unknown',
+        principalName: req.headers['x-ms-client-principal-name'],
+        authProvider: 'aad'
+      };
+      
+      console.log('✅ Extracted user info from headers:', userInfo);
+    }
+    else {
+      console.log('❌ No authentication headers found');
+    }
+  } catch (error) {
+    console.error('❌ Error extracting user info:', error);
+  }
+  
+  // Track the page visit with enhanced user information
   client.trackEvent({
     name: 'PageVisit',
     properties: {
+      // Page information
       path: req.path,
       method: req.method,
+      fullUrl: req.protocol + '://' + req.get('host') + req.originalUrl,
+      
+      // User information
+      userId: userInfo?.userId || 'anonymous',
+      userEmail: userInfo?.userEmail || 'anonymous',
+      userName: userInfo?.userName || 'anonymous',
+      displayName: userInfo?.displayName || 'anonymous',
+      principalName: userInfo?.principalName || 'anonymous',
+      authProvider: userInfo?.authProvider || 'none',
+      isAuthenticated: !!userInfo,
+      
+      // Technical information
       userAgent: req.get('User-Agent'),
       ip: req.ip || req.connection.remoteAddress,
+      referer: req.get('Referer') || 'direct',
       timestamp: new Date().toISOString()
     }
   });
+  
+  // Set user context for Application Insights correlation
+  if (userInfo) {
+    client.setAuthenticatedUserContext(userInfo.userId, userInfo.userEmail);
+  }
+  
+  // Make user info available to routes and views
+  req.currentUser = userInfo;
+  res.locals.user = userInfo; // This makes user available in EJS templates
   
   next();
 });
