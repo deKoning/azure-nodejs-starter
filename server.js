@@ -1,6 +1,7 @@
-// ===== APPLICATION INSIGHTS SETUP (MUST BE FIRST) =====
+// ===== ADD THIS AT THE VERY TOP OF server.js (LINE 1) =====
 const appInsights = require('applicationinsights');
 
+// REPLACE 'YOUR_CONNECTION_STRING_HERE' with your actual connection string from Azure
 const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || 'InstrumentationKey=2105187e-4890-4f76-a832-2729c0ccc743;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=61d6f45d-dc58-49aa-87d0-6ae2a60547eb';
 
 appInsights.setup(connectionString)
@@ -12,7 +13,6 @@ appInsights.setup(connectionString)
 
 const client = appInsights.defaultClient;
 
-// ===== EXPRESS SETUP =====
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -31,7 +31,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ===== SINGLE UNIFIED MIDDLEWARE FOR USER TRACKING =====
+// ===== ADD THIS MIDDLEWARE AFTER app = express() BUT BEFORE YOUR ROUTES =====
+
+// REPLACE your existing middleware with this updated version
 app.use((req, res, next) => {
   console.log(`Received request: ${req.method} ${req.path}`);
   
@@ -39,11 +41,12 @@ app.use((req, res, next) => {
   
   // Extract user info from App Service Authentication headers
   try {
+    // Check for the main authentication header
     if (req.headers['x-ms-client-principal']) {
       const principalData = Buffer.from(req.headers['x-ms-client-principal'], 'base64').toString();
       const principal = JSON.parse(principalData);
       
-      console.log('Raw principal data:', principal);
+      console.log('Raw principal data:', principal); // Debug log
       
       userInfo = {
         userId: principal.userId || principal.oid || principal.sub,
@@ -56,6 +59,7 @@ app.use((req, res, next) => {
       
       console.log('✅ Extracted user info:', userInfo);
     }
+    // Fallback: Check other authentication headers
     else if (req.headers['x-ms-client-principal-name']) {
       userInfo = {
         userId: req.headers['x-ms-client-principal-id'] || 'unknown',
@@ -74,7 +78,7 @@ app.use((req, res, next) => {
     console.error('❌ Error extracting user info:', error);
   }
   
-  // Track the page visit with user information
+  // Track the page visit with enhanced user information
   client.trackEvent({
     name: 'PageVisit',
     properties: {
@@ -107,12 +111,63 @@ app.use((req, res, next) => {
   
   // Make user info available to routes and views
   req.currentUser = userInfo;
-  res.locals.user = userInfo;
+  res.locals.user = userInfo; // This makes user available in EJS templates
   
   next();
 });
 
-// ===== ROUTES =====
+
+// Enhanced route tracking for specific pages
+app.get('/', (req, res, next) => {
+  // Track homepage visits separately
+  client.trackEvent({
+    name: 'HomePageVisit',
+    properties: {
+      userId: req.user?.oid || 'anonymous',
+      userEmail: req.user?.email || 'anonymous',
+      userName: req.user?.name || 'anonymous'
+    }
+  });
+  next();
+});
+
+// Track user login events (add this where your login logic is)
+app.post('/auth/login', (req, res, next) => {
+  // This should be in your actual login route
+  if (req.user) {
+    client.trackEvent({
+      name: 'UserLogin',
+      properties: {
+        userId: req.user.oid,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        loginMethod: 'AzureAD',
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  next();
+});
+
+// Track user logout events (add this where your logout logic is)
+app.post('/auth/logout', (req, res, next) => {
+  if (req.user) {
+    client.trackEvent({
+      name: 'UserLogout',
+      properties: {
+        userId: req.user.oid,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  next();
+});
+
+
+
+// Routes
 app.get('/', (req, res) => {
     res.render('index', { 
         title: 'Welcome to Azure!',
@@ -136,7 +191,6 @@ app.get('/api/status', (req, res) => {
     });
 });
 
-// ===== ERROR HANDLING =====
 // 404 handler
 app.use((req, res) => {
     res.status(404).render('404', { 
@@ -151,7 +205,6 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-// ===== START SERVER =====
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Visit: http://localhost:${PORT}`);
