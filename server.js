@@ -50,6 +50,118 @@ app.use((req, res, next) => {
 });
 
 // ===== THEN CONTINUE WITH YOUR EXISTING ROUTES =====
+
+// Add this to your server.js AFTER the Application Insights setup
+// and AFTER app = express(), but BEFORE your routes
+
+// Enhanced middleware to track authenticated users
+app.use((req, res, next) => {
+  console.log(`Received request: ${req.method} ${req.path}`);
+  
+  // Extract user information from Azure AD authentication
+  // This assumes your authentication middleware sets req.user
+  let userInfo = null;
+  
+  if (req.user) {
+    userInfo = {
+      userId: req.user.oid || req.user.sub || req.user.id,
+      userEmail: req.user.email || req.user.preferred_username || req.user.upn,
+      userName: req.user.name || req.user.displayName,
+      userPrincipalName: req.user.upn || req.user.preferred_username,
+      roles: req.user.roles || [],
+      groups: req.user.groups || []
+    };
+    
+    // Set user context for Application Insights
+    client.setAuthenticatedUserContext(userInfo.userId, userInfo.userEmail);
+    
+    console.log('Authenticated user:', userInfo.userName, userInfo.userEmail);
+  }
+  
+  // Track the page visit with user information
+  client.trackEvent({
+    name: 'PageVisit',
+    properties: {
+      // Page information
+      path: req.path,
+      method: req.method,
+      fullUrl: req.protocol + '://' + req.get('host') + req.originalUrl,
+      
+      // User information (if authenticated)
+      userId: userInfo?.userId || 'anonymous',
+      userEmail: userInfo?.userEmail || 'anonymous',
+      userName: userInfo?.userName || 'anonymous',
+      userPrincipalName: userInfo?.userPrincipalName || 'anonymous',
+      isAuthenticated: !!req.user,
+      
+      // Technical information
+      userAgent: req.get('User-Agent'),
+      ip: req.ip || req.connection.remoteAddress,
+      referer: req.get('Referer') || 'direct',
+      timestamp: new Date().toISOString(),
+      
+      // Session information
+      sessionId: req.sessionID || 'no-session'
+    }
+  });
+  
+  // Track custom metric for authenticated vs anonymous users
+  client.trackMetric({
+    name: 'AuthenticatedUsers',
+    value: req.user ? 1 : 0
+  });
+  
+  next();
+});
+
+// Enhanced route tracking for specific pages
+app.get('/', (req, res, next) => {
+  // Track homepage visits separately
+  client.trackEvent({
+    name: 'HomePageVisit',
+    properties: {
+      userId: req.user?.oid || 'anonymous',
+      userEmail: req.user?.email || 'anonymous',
+      userName: req.user?.name || 'anonymous'
+    }
+  });
+  next();
+});
+
+// Track user login events (add this where your login logic is)
+app.post('/auth/login', (req, res, next) => {
+  // This should be in your actual login route
+  if (req.user) {
+    client.trackEvent({
+      name: 'UserLogin',
+      properties: {
+        userId: req.user.oid,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        loginMethod: 'AzureAD',
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  next();
+});
+
+// Track user logout events (add this where your logout logic is)
+app.post('/auth/logout', (req, res, next) => {
+  if (req.user) {
+    client.trackEvent({
+      name: 'UserLogout',
+      properties: {
+        userId: req.user.oid,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  next();
+});
+
 // Routes
 app.get('/', (req, res) => {
     res.render('index', { 
