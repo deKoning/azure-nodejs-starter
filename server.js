@@ -35,7 +35,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Application Insights middleware (with error handling)
+// Application Insights middleware (FIXED VERSION)
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   
@@ -62,7 +62,7 @@ app.use((req, res, next) => {
         }
       }
       
-      // Track page visit
+      // Track page visit (REMOVED the problematic setAuthenticatedUserContext call)
       client.trackEvent({
         name: 'PageVisit',
         properties: {
@@ -76,6 +76,16 @@ app.use((req, res, next) => {
           timestamp: new Date().toISOString()
         }
       });
+      
+      // ALTERNATIVE: Set user context using telemetry initializer (safer method)
+      if (userInfo) {
+        client.addTelemetryProcessor((envelope) => {
+          envelope.tags = envelope.tags || {};
+          envelope.tags['ai.user.id'] = userInfo.userId;
+          envelope.tags['ai.user.authUserId'] = userInfo.userEmail;
+          return true;
+        });
+      }
       
       // Make user available to routes
       req.currentUser = userInfo;
