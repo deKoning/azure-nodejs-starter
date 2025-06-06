@@ -1,4 +1,22 @@
-// Minimal working server.js - TEST THIS FIRST
+// Application Insights setup (with error handling)
+let client = null;
+try {
+  const appInsights = require('applicationinsights');
+  const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || 'InstrumentationKey=2105187e-4890-4f76-a832-2729c0ccc743;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=61d6f45d-dc58-49aa-87d0-6ae2a60547eb';
+
+  appInsights.setup(connectionString)
+    .setAutoCollectRequests(true)
+    .setAutoCollectExceptions(true)
+    .start();
+
+  client = appInsights.defaultClient;
+  console.log('✅ Application Insights initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize Application Insights:', error);
+  console.log('Continuing without Application Insights...');
+}
+
+// Express setup
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -17,9 +35,58 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Simple logging middleware
+// Application Insights middleware (with error handling)
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
+  
+  // Only track if Application Insights is working
+  if (client) {
+    try {
+      let userInfo = null;
+      
+      // Extract user info from App Service Authentication
+      if (req.headers['x-ms-client-principal']) {
+        try {
+          const principalData = Buffer.from(req.headers['x-ms-client-principal'], 'base64').toString();
+          const principal = JSON.parse(principalData);
+          
+          userInfo = {
+            userId: principal.userId || principal.oid || 'unknown',
+            userEmail: principal.userDetails || 'unknown',
+            userName: (principal.userDetails || 'unknown').split('@')[0]
+          };
+          
+          console.log('✅ User found:', userInfo.userName);
+        } catch (userError) {
+          console.log('Error parsing user info:', userError.message);
+        }
+      }
+      
+      // Track page visit
+      client.trackEvent({
+        name: 'PageVisit',
+        properties: {
+          path: req.path,
+          method: req.method,
+          userId: userInfo?.userId || 'anonymous',
+          userEmail: userInfo?.userEmail || 'anonymous',
+          userName: userInfo?.userName || 'anonymous',
+          isAuthenticated: !!userInfo,
+          userAgent: req.get('User-Agent') || 'unknown',
+          timestamp: new Date().toISOString()
+        }
+      });
+      
+      // Make user available to routes
+      req.currentUser = userInfo;
+      res.locals.user = userInfo;
+      
+    } catch (trackingError) {
+      console.error('Tracking error:', trackingError.message);
+      // Continue even if tracking fails
+    }
+  }
+  
   next();
 });
 
@@ -54,7 +121,8 @@ app.get('/api/status', (req, res) => {
             status: 'OK',
             timestamp: new Date().toISOString(),
             environment: process.env.NODE_ENV || 'development',
-            port: PORT
+            port: PORT,
+            appInsights: !!client
         });
     } catch (error) {
         console.error('Error in status API:', error);
@@ -67,7 +135,7 @@ app.use((req, res) => {
     res.status(404).send('Page Not Found');
 });
 
-// Error handler with detailed logging
+// Error handler
 app.use((err, req, res, next) => {
     console.error('=== ERROR DETAILS ===');
     console.error('Error message:', err.message);
@@ -83,4 +151,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Application Insights: ${client ? 'Enabled' : 'Disabled'}`);
 });
