@@ -140,33 +140,6 @@ app.get('/api/status', (req, res) => {
     }
 });
 
-// Add this route after /api/status and before the 404 handler
-app.get('/debug-insights', (req, res) => {
-  const debugInfo = {
-    clientExists: !!client,
-    environmentVariable: !!process.env.APPLICATIONINSIGHTS_CONNECTION_STRING,
-    nodeEnv: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
-  };
-  
-  if (client) {
-    try {
-      client.trackEvent({
-        name: 'DebugTest',
-        properties: {
-          message: 'Debug route accessed',
-          timestamp: new Date().toISOString()
-        }
-      });
-      debugInfo.testEventSent = true;
-    } catch (error) {
-      debugInfo.testEventError = error.message;
-    }
-  }
-  
-  console.log('Debug info:', debugInfo);
-  res.json(debugInfo);
-});
 
 // 404 handler
 app.use((req, res) => {
