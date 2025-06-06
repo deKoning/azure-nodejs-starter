@@ -1,3 +1,18 @@
+// ===== ADD THIS AT THE VERY TOP OF server.js (LINE 1) =====
+const appInsights = require('applicationinsights');
+
+// REPLACE 'YOUR_CONNECTION_STRING_HERE' with your actual connection string from Azure
+const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || 'InstrumentationKey=2105187e-4890-4f76-a832-2729c0ccc743;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=61d6f45d-dc58-49aa-87d0-6ae2a60547eb';
+
+appInsights.setup(connectionString)
+  .setAutoDependencyCorrelation(true)
+  .setAutoCollectRequests(true)
+  .setAutoCollectPerformance(true)
+  .setAutoCollectExceptions(true)
+  .start();
+
+const client = appInsights.defaultClient;
+
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -16,6 +31,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ===== ADD THIS MIDDLEWARE AFTER app = express() BUT BEFORE YOUR ROUTES =====
+
+app.use((req, res, next) => {
+  // Track every page visit
+  client.trackEvent({
+    name: 'PageVisit',
+    properties: {
+      path: req.path,
+      method: req.method,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip || req.connection.remoteAddress,
+      timestamp: new Date().toISOString()
+    }
+  });
+  
+  next();
+});
+
+// ===== THEN CONTINUE WITH YOUR EXISTING ROUTES =====
 // Routes
 app.get('/', (req, res) => {
     res.render('index', { 
