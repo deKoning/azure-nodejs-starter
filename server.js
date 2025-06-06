@@ -229,34 +229,7 @@ app.post('/auth/logout', (req, res, next) => {
   next();
 });
 
-// OPTIONAL: Add this tracking code HERE (before your existing routes)
-app.get('/', (req, res, next) => {
-  if (req.currentUser) {
-    client.trackEvent({
-      name: 'HomePageVisit',
-      properties: {
-        userId: req.currentUser.userId,
-        userEmail: req.currentUser.userEmail,
-        userName: req.currentUser.userName
-      }
-    });
-  }
-  next(); // This continues to your existing route below
-});
 
-app.get('/about', (req, res, next) => {
-  if (req.currentUser) {
-    client.trackEvent({
-      name: 'AboutPageVisit',
-      properties: {
-        userId: req.currentUser.userId,
-        userEmail: req.currentUser.userEmail,
-        userName: req.currentUser.userName
-      }
-    });
-  }
-  next(); // This continues to your existing route below
-});
 
 // Routes
 app.get('/', (req, res) => {
