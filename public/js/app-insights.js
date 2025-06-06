@@ -74,3 +74,42 @@
     });
     
 })();
+
+// Function to set user context (call this after user authentication)
+window.setAppInsightsUser = function(userInfo) {
+    if (window.appInsights && userInfo) {
+        // Set authenticated user context
+        window.appInsights.setAuthenticatedUserContext(
+            userInfo.oid || userInfo.id,
+            userInfo.email,
+            true
+        );
+        
+        // Add user properties to all telemetry
+        window.appInsights.addTelemetryInitializer(function(envelope) {
+            envelope.tags = envelope.tags || {};
+            envelope.tags['ai.user.id'] = userInfo.oid || userInfo.id;
+            envelope.tags['ai.user.authUserId'] = userInfo.email;
+            
+            // Add custom properties
+            envelope.data = envelope.data || {};
+            envelope.data.baseData = envelope.data.baseData || {};
+            envelope.data.baseData.properties = envelope.data.baseData.properties || {};
+            
+            envelope.data.baseData.properties.userName = userInfo.name;
+            envelope.data.baseData.properties.userEmail = userInfo.email;
+            envelope.data.baseData.properties.userPrincipalName = userInfo.upn;
+        });
+        
+        console.log('Application Insights user context set for:', userInfo.name);
+    }
+};
+
+// Auto-detect user from page if available
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user info is available in a global variable or data attribute
+    // You'll need to modify this based on how you expose user info in your pages
+    if (window.currentUser) {
+        window.setAppInsightsUser(window.currentUser);
+    }
+});
