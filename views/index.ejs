@@ -21,8 +21,6 @@
         </div>
     </nav>
 
-
-
     <main class="main-content">
         <div class="hero-section">
             <div class="hero-content">
@@ -34,21 +32,19 @@
                 
                 <div class="feature-grid">
                     <div class="feature-card">
-                        <i class="fas fa-server"></i>
-                        <h3>Node.js & Express</h3>
-                        <p>Built with modern Node.js and Express framework</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fab fa-microsoft"></i>
-                        <h3>Azure Deployed</h3>
-                        <p>Running seamlessly on Azure App Service</p>
-                    </div>
-                    <div class="feature-card">
                         <i class="fas fa-code"></i>
-                        <h3>Ready to Customize</h3>
-                        <p>Modify this template to build your application</p>
+                        <h3>test</h3>
+                        <div>
+                            <form action="/test" method="POST">
+                            <label for="url">Voer een website-URL in:</label><br>
+                            <input type="url" id="url" name="url" required placeholder="https://voorbeeld.nl"><br><br>
+                            <div><button class="btn btn-primary" submit">Start toegankelijkheidstest</button></div>
+                            </form>
+                        </div>
                     </div>
+              
                 </div>
+
 
                 <div class="action-buttons">
                     <a href="/about" class="btn btn-primary">
@@ -61,15 +57,6 @@
             </div>
         </div>
     </main>
-
-
-
-    <form action="/test" method="POST">
-  <label for="url">Voer een website-URL in:</label>
-  <input type="url" id="url" name="url" required placeholder="https://voorbeeld.nl">
-  <button type="submit">Start toegankelijkheidstest</button>
-</form>
-
 
     <footer class="footer">
         <p>&copy; toegankelijkheidstest.</p>
