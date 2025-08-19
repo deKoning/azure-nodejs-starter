@@ -177,7 +177,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     try {
         res.render('index', { 
-            title: 'Welcome to Azure!',
+            title: 'Welcome to the Accessibility Web App',
             message: 'Your Node.js app is running successfully on Azure App Service'
         });
     } catch (error) {
