@@ -1,32 +1,153 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Accessibility Test Results</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-    }
-    h1 {
-      color: #333;
-    }
-    pre {
-      background-color: #f4f4f4;
-      padding: 20px;
-      border-radius: 5px;
-      overflow-x: auto;
-    }
-    a {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      color: #007BFF;
-    }
-  </style>
+  <meta charset="utf-8" />
+  <title><%= title || 'Accessibility Results' %> · <%= targetUrl %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <link href="/styles.css" rel="stylesheet" />
 </head>
 <body>
-  <h1>Accessibility Test Results</h1>
-  <pre><%= JSON.stringify(results, null, 2) %></pre>
-  <a href="/">Test another URL</a>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header" role="banner">
+    <h1 class="site-title">Accessibility Results</h1>
+    <p class="site-tagline">Target: <a href="<%= targetUrl %>"><%= targetUrl %></a></p>
+    <nav aria-label="Primary">
+      <ul class="nav">
+        <li><a href="/">Home</a></li>
+        <li><a href="/">Test</a></li>
+        <li><a href="/about">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" class="container" role="main">
+    <section class="summary grid">
+      <div class="card bad">Violations <strong class="count"><%= results.violations.length %></strong></div>
+      <div class="card good">Passes <strong class="count"><%= results.passes.length %></strong></div>
+      <div class="card warn">Incomplete <strong class="count"><%= results.incomplete.length %></strong></div>
+      <div class="card">Inapplicable <strong class="count"><%= results.inapplicable.length %></strong></div>
+    </section>
+
+    <div class="actions">
+      <a href="/" class="btn outline">← Run another test</a>
+      <button type="button" class="btn" id="btnExpandAll">Expand all</button>
+      <button type="button" class="btn" id="btnCollapseAll">Collapse all</button>
+      <button type="button" class="btn" id="btnDownloadJson">Download JSON</button>
+    </div>
+
+    <% if (results.violations.length) { %>
+      <section aria-labelledby="violations-heading" class="stack">
+        <h2 id="violations-heading" class="h2">Violations</h2>
+
+        <% results.violations.forEach(function(v, i) { %>
+          <details class="violation" data-impact="<%= v.impact || 'unknown' %>">
+            <summary>
+              <span class="idx"><%= i + 1 %>.</span>
+              <span class="violation-title"><%= v.help %></span>
+              <span class="rule-id">(<%= v.id %>)</span>
+              <span class="impact <%= v.impact %>"><%= v.impact || 'unknown' %></span>
+            </summary>
+
+            <div class="violation-body">
+              <% if (v.description) { %><p class="muted"><%= v.description %></p><% } %>
+              <p>Guidance: <a href="<%= v.helpUrl %>"><%= v.helpUrl %></a></p>
+
+              <h3 class="h3">Affected nodes (<%= v.nodes.length %>)</h3>
+              <ol class="nodes">
+                <% v.nodes.forEach(function(n) { %>
+                  <li class="node">
+                    <% if (n.target && n.target.length) { %>
+                      <code class="selector"><%= n.target.join(' ') %></code>
+                    <% } %>
+
+                    <% if (n.failureSummary) { %>
+                      <pre class="failure"><%= n.failureSummary %></pre>
+                    <% } %>
+
+                    <% if (n.any && n.any.length) { %>
+                      <details>
+                        <summary>Checks (any)</summary>
+                        <ul>
+                          <% n.any.forEach(function(a) { %>
+                            <li><strong><%= a.id %></strong>: <%= a.message %></li>
+                          <% }) %>
+                        </ul>
+                      </details>
+                    <% } %>
+
+                    <% if (n.none && n.none.length) { %>
+                      <details>
+                        <summary>Checks (none)</summary>
+                        <ul>
+                          <% n.none.forEach(function(a) { %>
+                            <li><strong><%= a.id %></strong>: <%= a.message %></li>
+                          <% }) %>
+                        </ul>
+                      </details>
+                    <% } %>
+
+                    <% if (n.all && n.all.length) { %>
+                      <details>
+                        <summary>Checks (all)</summary>
+                        <ul>
+                          <% n.all.forEach(function(a) { %>
+                            <li><strong><%= a.id %></strong>: <%= a.message %></li>
+                          <% }) %>
+                        </ul>
+                      </details>
+                    <% } %>
+                  </li>
+                <% }) %>
+              </ol>
+            </div>
+          </details>
+        <% }) %>
+      </section>
+    <% } else { %>
+      <p class="good">No violations found 🎉</p>
+    <% } %>
+
+    <% if (results.incomplete.length) { %>
+      <section class="stack">
+        <h2 class="h2">Needs manual review</h2>
+        <ul class="bullets">
+          <% results.incomplete.forEach(function(v){ %>
+            <li>
+              <strong><%= v.help %></strong> (<code><%= v.id %></code>)
+              — <a href="<%= v.helpUrl %>">guidance</a>
+            </li>
+          <% }) %>
+        </ul>
+      </section>
+    <% } %>
+  </main>
+
+  <footer class="site-footer">
+    <small>Scan completed at <time datetime="<%= new Date().toISOString() %>"><%= new Date().toLocaleString() %></time></small>
+  </footer>
+
+  <script>
+    // Expand/Collapse helpers
+    const expandAll = () => document.querySelectorAll('details.violation').forEach(d => d.open = true);
+    const collapseAll = () => document.querySelectorAll('details.violation').forEach(d => d.open = false);
+    document.getElementById('btnExpandAll').addEventListener('click', expandAll);
+    document.getElementById('btnCollapseAll').addEventListener('click', collapseAll);
+
+    // Download raw axe JSON
+    document.getElementById('btnDownloadJson').addEventListener('click', () => {
+      const data = <%- JSON.stringify(results, null, 2) %>;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'axe-results.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+  </script>
 </body>
 </html>

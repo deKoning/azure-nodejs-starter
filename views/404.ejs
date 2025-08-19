@@ -1,59 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <title>Page Not Found · A11y Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <link href="/styles.css" rel="stylesheet" />
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <h1 class="nav-logo">
-                <i class="fas fa-cloud"></i> Azure App
-            </h1>
-            <ul class="nav-menu">
-                <li><a href="/" class="nav-link">Home</a></li>
-                <li><a href="/about" class="nav-link">About</a></li>
-                <li><a href="/api/status" class="nav-link">API Status</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <main class="main-content">
-        <div class="error-page">
-            <div class="error-content">
-                <i class="fas fa-exclamation-triangle error-icon"></i>
-                <h1 class="error-title">404 - Page Not Found</h1>
-                <p class="error-message">
-                    Sorry, the page <code><%= url %></code> you're looking for doesn't exist.
-                </p>
-                <a href="/" class="btn btn-primary">
-                    <i class="fas fa-home"></i> Go Home
-                </a>
-            </div>
-        </div>
-    </main>
-
-    <footer class="footer">
-        <p>&copy; 2024 Azure Node.js App. Built with ❤️ and deployed on Azure.</p>
-    </footer>
-
-    <!-- Add this BEFORE the app-insights.js script in ALL your .ejs files -->
-    <script>
-      // Expose user information to JavaScript (if user is authenticated)
-      <% if (typeof user !== 'undefined' && user) { %>
-        window.currentUser = {
-          oid: '<%= user.oid %>',
-          email: '<%= user.email %>',
-          name: '<%= user.name %>',
-          upn: '<%= user.upn || user.preferred_username %>'
-        };
-      <% } else { %>
-        window.currentUser = null;
-      <% } %>
-    </script>
-
+  <main class="container center">
+    <h1 class="big">404</h1>
+    <p>Sorry, we couldn’t find that page.</p>
+    <p><a href="/" class="btn">Go home</a></p>
+  </main>
 </body>
 </html>

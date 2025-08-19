@@ -1,98 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <title>About · A11y Scanner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <link href="/styles.css" rel="stylesheet" />
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <h1 class="nav-logo">
-                <i class="fas fa-cloud"></i> Azure App
-            </h1>
-            <ul class="nav-menu">
-                <li><a href="/" class="nav-link">Home</a></li>
-                <li><a href="/about" class="nav-link active">About</a></li>
-                <li><a href="/api/status" class="nav-link">API Status</a></li>
-            </ul>
-        </div>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header" role="banner">
+    <h1 class="site-title">About This Project</h1>
+    <nav aria-label="Primary">
+      <ul class="nav">
+        <li><a href="/">Home</a></li>
+        <li><a href="/">Test</a></li>
+        <li><a href="/about" aria-current="page">About</a></li>
+      </ul>
     </nav>
+  </header>
 
-    <main class="main-content">
-        <div class="container">
-            <div class="about-section">
-                <h1><i class="fas fa-info-circle"></i> About This Application</h1>
-                <p class="lead"><%= description %></p>
-                
-                <div class="tech-stack">
-                    <h2>Technology Stack</h2>
-                    <div class="tech-list">
-                        <div class="tech-item">
-                            <i class="fab fa-node-js"></i>
-                            <span>Node.js</span>
-                        </div>
-                        <div class="tech-item">
-                            <i class="fas fa-route"></i>
-                            <span>Express.js</span>
-                        </div>
-                        <div class="tech-item">
-                            <i class="fas fa-file-code"></i>
-                            <span>EJS Templates</span>
-                        </div>
-                        <div class="tech-item">
-                            <i class="fab fa-microsoft"></i>
-                            <span>Azure App Service</span>
-                        </div>
-                    </div>
-                </div>
+  <main id="main" class="container" role="main">
+    <article class="prose card">
+      <h2 class="h2">What is it?</h2>
+      <p>This is a lightweight accessibility (a11y) scanner that loads a target page in headless Chromium (via Puppeteer) and runs <code>@axe-core/puppeteer</code> to detect common issues. Results are rendered in a readable report with links to remediation guidance.</p>
 
-                <div class="features">
-                    <h2>Features</h2>
-                    <ul>
-                        <li><i class="fas fa-check"></i> Responsive web design</li>
-                        <li><i class="fas fa-check"></i> RESTful API endpoints</li>
-                        <li><i class="fas fa-check"></i> Modern CSS with animations</li>
-                        <li><i class="fas fa-check"></i> Optimized for Azure deployment</li>
-                        <li><i class="fas fa-check"></i> Environment-aware configuration</li>
-                    </ul>
-                </div>
+      <h2 class="h2">How it works</h2>
+      <ol>
+        <li>You submit a URL on the Test page.</li>
+        <li>The server launches a headless browser and navigates to the URL.</li>
+        <li>axe‑core analyzes the DOM and returns findings (violations, incomplete, passes, inapplicable).</li>
+        <li>We summarize the output and provide details for each rule and affected node.</li>
+      </ol>
 
-                <div class="getting-started">
-                    <h2>Getting Started</h2>
-                    <p>To customize this application:</p>
-                    <ol>
-                        <li>Clone the repository from GitHub</li>
-                        <li>Install dependencies with <code>npm install</code></li>
-                        <li>Run locally with <code>npm run dev</code></li>
-                        <li>Deploy to Azure using GitHub Actions or Azure CLI</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </main>
+      <h2 class="h2">Technology</h2>
+      <ul>
+        <li>Node.js + Express + EJS</li>
+        <li>Puppeteer + <code>@axe-core/puppeteer</code></li>
+        <li>Optional telemetry via Azure Application Insights</li>
+        <li>Hardened with Helmet and rate limiting on the scanning endpoint</li>
+      </ul>
 
-    <footer class="footer">
-        <p>&copy; 2024 Azure Node.js App. Built with ❤️ and deployed on Azure.</p>
-    </footer>
+      <h2 class="h2">Notes & limitations</h2>
+      <ul>
+        <li>Some accessibility checks require manual review; see “Incomplete” items.</li>
+        <li>Pages requiring authentication aren’t supported unless the environment injects valid session/auth headers.</li>
+        <li>Heavy pages may take longer or time out—consider queueing for large‑scale scans.</li>
+      </ul>
 
-    <script src="/js/main.js"></script>
-    <!-- Add this BEFORE the app-insights.js script in ALL your .ejs files -->
-    <script>
-      // Expose user information to JavaScript (if user is authenticated)
-      <% if (typeof user !== 'undefined' && user) { %>
-        window.currentUser = {
-          oid: '<%= user.oid %>',
-          email: '<%= user.email %>',
-          name: '<%= user.name %>',
-          upn: '<%= user.upn || user.preferred_username %>'
-        };
-      <% } else { %>
-        window.currentUser = null;
-      <% } %>
-    </script>
+      <p><a class="btn" href="/">Run a test</a></p>
+    </article>
+  </main>
 
+  <footer class="site-footer">
+    <small>© <%= new Date().getFullYear() %> A11y Scanner</small>
+  </footer>
 </body>
 </html>

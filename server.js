@@ -1,144 +1,158 @@
-// Application Insights setup (with error handling)
-let client = null;
+// server.js
+// A11y scanner (axe-core + Puppeteer) with Azure App Insights telemetry (optional) and Easy Auth user parsing.
+
+require('dotenv').config(); // local .env; on Azure use App Settings
+
+// ----------------------
+// Application Insights (optional)
+// ----------------------
+let appInsightsClient = null;
 try {
   const appInsights = require('applicationinsights');
-  const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || 'InstrumentationKey=2105187e-4890-4f76-a832-2729c0ccc743;IngestionEndpoint=https://canadacentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://canadacentral.livediagnostics.monitor.azure.com/;ApplicationId=61d6f45d-dc58-49aa-87d0-6ae2a60547eb';
-
-  appInsights.setup(connectionString)
-    .setAutoCollectRequests(true)
-    .setAutoCollectExceptions(true)
-    .start();
-
-  client = appInsights.defaultClient;
-  console.log('✅ Application Insights initialized successfully');
-} catch (error) {
-  console.error('❌ Failed to initialize Application Insights:', error);
-  console.log('Continuing without Application Insights...');
+  const cs = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
+  if (cs) {
+    appInsights
+      .setup(cs)
+      .setAutoCollectRequests(true)
+      .setAutoCollectExceptions(true)
+      .start();
+    appInsightsClient = appInsights.defaultClient;
+    console.log('✅ Application Insights initialized');
+  } else {
+    console.log('ℹ️  Application Insights not configured (set APPLICATIONINSIGHTS_CONNECTION_STRING)');
+  }
+} catch (err) {
+  console.warn('⚠️  Application Insights disabled:', err?.message || err);
 }
 
-// Express setup
-const express = require('express');
+// ----------------------
+// Core modules & setup
+// ----------------------
 const path = require('path');
+const express = require('express');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const validator = require('validator');
+const pino = require('pino');
+const { AxePuppeteer } = require('@axe-core/puppeteer');
+const puppeteer = require('puppeteer');
+
 const app = express();
-
-// Set the port from environment variable or default to 3000
 const PORT = process.env.PORT || 3000;
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  transport: { target: 'pino-pretty' }
+});
 
-// Set EJS as the view engine
+// ----------------------
+// Express configuration
+// ----------------------
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Serve static files from public directory
+app.use(helmet());
+app.disable('x-powered-by');
+
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json({ limit: '200kb' }));
+app.use(express.urlencoded({ extended: true, limit: '200kb' }));
 
-// Parse JSON and URL-encoded data
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+console.log('Views directory:', app.get('views'));
 
-// Enhanced middleware with better user detection
+// ----------------------
+// Telemetry + user parsing middleware (Azure Easy Auth aware)
+// ----------------------
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Client exists: ${!!client}`);
-  
-  // Only track if Application Insights is working
-  if (client) {
+  logger.info({ method: req.method, path: req.path }, 'HTTP request');
+
+  if (appInsightsClient) {
     try {
       let userInfo = null;
-      
-      // Debug: Log all authentication headers
-      console.log('=== AUTH HEADERS DEBUG ===');
-      console.log('x-ms-client-principal exists:', !!req.headers['x-ms-client-principal']);
-      console.log('x-ms-client-principal-name:', req.headers['x-ms-client-principal-name']);
-      console.log('x-ms-client-principal-id:', req.headers['x-ms-client-principal-id']);
-      console.log('x-ms-client-principal-idp:', req.headers['x-ms-client-principal-idp']);
-      
-      // Method 1: Extract from x-ms-client-principal header (base64 encoded)
+
+      // Method 1: Parse the base64 JSON from Easy Auth (x-ms-client-principal)
       if (req.headers['x-ms-client-principal']) {
         try {
-          const principalData = Buffer.from(req.headers['x-ms-client-principal'], 'base64').toString();
-          console.log('Raw principal data (first 200 chars):', principalData.substring(0, 200));
-          
-          const principal = JSON.parse(principalData);
-          console.log('Parsed principal keys:', Object.keys(principal));
-          console.log('Principal user details:', principal.userDetails);
-          console.log('Principal user ID:', principal.userId);
-          console.log('Principal claims:', principal.claims?.length || 'No claims');
-          
-          // Extract user information with multiple fallback methods
-          const extractEmail = () => {
-            return principal.userDetails || 
-                   principal.claims?.find(c => c.typ === 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress')?.val ||
-                   principal.claims?.find(c => c.typ === 'email')?.val ||
-                   principal.claims?.find(c => c.typ === 'preferred_username')?.val ||
-                   'unknown@domain.com';
+          const principalRaw = Buffer.from(
+            req.headers['x-ms-client-principal'],
+            'base64'
+          ).toString();
+          const principal = JSON.parse(principalRaw);
+
+          const extractClaim = (principal, keys = []) => {
+            for (const key of keys) {
+              const found =
+                principal.claims?.find(c => c.typ === key)?.val ??
+                principal[key];
+              if (found) return found;
+            }
+            return undefined;
           };
-          
-          const extractName = () => {
-            return principal.claims?.find(c => c.typ === 'name')?.val ||
-                   principal.claims?.find(c => c.typ === 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name')?.val ||
-                   principal.claims?.find(c => c.typ === 'http://schemas.microsoft.com/identity/claims/displayname')?.val ||
-                   principal.userDetails?.split('@')[0] ||
-                   'Unknown User';
-          };
-          
-          const extractUserId = () => {
-            return principal.userId ||
-                   principal.oid ||
-                   principal.sub ||
-                   principal.claims?.find(c => c.typ === 'http://schemas.microsoft.com/identity/claims/objectidentifier')?.val ||
-                   principal.claims?.find(c => c.typ === 'oid')?.val ||
-                   'unknown-id';
-          };
-          
+
+          const extractEmail =
+            extractClaim(principal, [
+              'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
+              'email',
+              'preferred_username',
+              'userDetails'
+            ]) || 'unknown@domain.com';
+
+          const extractName =
+            extractClaim(principal, [
+              'name',
+              'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name',
+              'http://schemas.microsoft.com/identity/claims/displayname'
+            ]) ||
+            (principal.userDetails
+              ? principal.userDetails.split('@')[0]
+              : 'Unknown User');
+
+          const extractUserId =
+            principal.userId ||
+            extractClaim(principal, [
+              'http://schemas.microsoft.com/identity/claims/objectidentifier',
+              'oid',
+              'sub'
+            ]) ||
+            'unknown-id';
+
           userInfo = {
-            userId: extractUserId(),
-            userEmail: extractEmail(),
-            userName: extractName(),
-            displayName: extractName(),
+            userId: extractUserId,
+            userEmail: extractEmail,
+            userName: extractName,
+            displayName: extractName,
             principalName: principal.userDetails || 'unknown',
             authProvider: principal.identityProvider || 'aad',
-            claimsCount: principal.claims?.length || 0
+            claimsCount: principal.claims?.length || 0,
+            method: 'principal-header'
           };
-          
-          console.log('✅ Extracted user info:', JSON.stringify(userInfo, null, 2));
-          
-        } catch (userError) {
-          console.log('❌ Error parsing x-ms-client-principal:', userError.message);
+        } catch (e) {
+          logger.warn({ err: e }, 'Error parsing x-ms-client-principal');
         }
       }
-      
       // Method 2: Fallback to individual headers
       else if (req.headers['x-ms-client-principal-name']) {
+        const email = req.headers['x-ms-client-principal-name'];
         userInfo = {
           userId: req.headers['x-ms-client-principal-id'] || 'header-unknown-id',
-          userEmail: req.headers['x-ms-client-principal-name'],
-          userName: req.headers['x-ms-client-principal-name']?.split('@')[0] || 'header-unknown',
-          principalName: req.headers['x-ms-client-principal-name'],
+          userEmail: email,
+          userName: email?.split('@')[0] || 'header-unknown',
+          principalName: email,
           authProvider: req.headers['x-ms-client-principal-idp'] || 'aad',
           method: 'individual-headers'
         };
-        
-        console.log('✅ Extracted user info from individual headers:', JSON.stringify(userInfo, null, 2));
       }
-      
-      // Method 3: Check for other possible headers
-      else {
-        console.log('❌ No authentication headers found');
-        console.log('Available headers:', Object.keys(req.headers).filter(h => h.includes('principal') || h.includes('auth')));
-      }
-      
-      console.log('Final user info:', userInfo ? 'Found user' : 'No user');
-      console.log('Sending tracking event for:', req.path);
-      
-      // Track page visit with enhanced user information
-      client.trackEvent({
+
+      // Attach to req/res for routes to use if needed
+      req.currentUser = userInfo;
+      res.locals.user = userInfo;
+
+      // Track a lightweight event for each request
+      appInsightsClient.trackEvent({
         name: 'PageVisit',
         properties: {
-          // Page info
           path: req.path,
           method: req.method,
-          fullUrl: req.protocol + '://' + req.get('host') + req.originalUrl,
-          
-          // User info
+          fullUrl: `${req.protocol}://${req.get('host')}${req.originalUrl}`,
           userId: userInfo?.userId || 'anonymous',
           userEmail: userInfo?.userEmail || 'anonymous',
           userName: userInfo?.userName || 'anonymous',
@@ -146,122 +160,193 @@ app.use((req, res, next) => {
           principalName: userInfo?.principalName || 'anonymous',
           authProvider: userInfo?.authProvider || 'none',
           isAuthenticated: !!userInfo,
-          userExtractionMethod: userInfo?.method || 'principal-header',
+          userExtractionMethod: userInfo?.method || 'none',
           claimsCount: userInfo?.claimsCount || 0,
-          
-          // Technical info
           userAgent: req.get('User-Agent') || 'unknown',
-          ip: req.ip || req.connection.remoteAddress || 'unknown',
+          ip: req.ip || req.connection?.remoteAddress || 'unknown',
           timestamp: new Date().toISOString()
         }
       });
-      
-      console.log('✅ Tracking event sent with user:', userInfo?.userName || 'anonymous');
-      
-      // Make user available to routes
-      req.currentUser = userInfo;
-      res.locals.user = userInfo;
-      
-    } catch (trackingError) {
-      console.error('❌ Tracking error:', trackingError.message);
-      console.error('Stack:', trackingError.stack);
+    } catch (e) {
+      logger.error({ err: e }, 'Telemetry middleware error');
     }
-  } else {
-    console.log('⚠️ Application Insights client not available');
   }
-  
+
   next();
 });
 
-// Routes
-app.get('/', (req, res) => {
-    try {
-        res.render('index', { 
-            title: 'Welcome to Azure!',
-            message: 'Your Node.js app is running successfully on Azure App Service'
-        });
-    } catch (error) {
-        console.error('Error rendering index:', error);
-        res.status(500).send('Error rendering page');
-    }
+// ----------------------
+// Rate limit only the scanning endpoint
+// ----------------------
+const testLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 6, // up to 6 scans/min/IP
+  standardHeaders: true,
+  legacyHeaders: false
 });
 
+// ----------------------
+// Routes
+// ----------------------
+app.get('/', (req, res) => {
+  try {
+    res.render('index', {
+      title: 'Accessibility Test',
+      message: 'Enter a URL to test.'
+    });
+  } catch (e) {
+    logger.error({ err: e }, 'Error rendering index');
+    res.status(500).send('Error rendering page');
+  }
+});
+
+// Redirect GET /test to /
+app.get('/test', (req, res) => res.redirect(302, '/'));
+
 app.get('/about', (req, res) => {
-    try {
-        res.render('about', { 
-            title: 'About',
-            description: 'This is a sample Node.js application deployed on Azure App Service'
-        });
-    } catch (error) {
-        console.error('Error rendering about:', error);
-        res.status(500).send('Error rendering page');
-    }
+  try {
+    res.render('about', {
+      title: 'About',
+      description:
+        'This is a sample Node.js application that runs accessibility scans with axe-core + Puppeteer.'
+    });
+  } catch (e) {
+    logger.error({ err: e }, 'Error rendering about');
+    res.status(500).send('Error rendering page');
+  }
 });
 
 app.get('/api/status', (req, res) => {
-    try {
-        res.json({
-            status: 'OK',
-            timestamp: new Date().toISOString(),
-            environment: process.env.NODE_ENV || 'development',
-            port: PORT,
-            appInsights: !!client
-        });
-    } catch (error) {
-        console.error('Error in status API:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).send('Page Not Found');
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-    console.error('=== ERROR DETAILS ===');
-    console.error('Error message:', err.message);
-    console.error('Error stack:', err.stack);
-    console.error('Request path:', req.path);
-    console.error('Request method:', req.method);
-    console.error('=====================');
-    
-    res.status(500).send('Internal Server Error - Check logs for details');
-});
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Application Insights: ${client ? 'Enabled' : 'Disabled'}`);
-});
-
-
-
-const { AxePuppeteer } = require('@axe-core/puppeteer');
-const puppeteer = require('puppeteer');
-
-app.post('/test', async (req, res) => {
-  const url = req.body.url;
   try {
-    const browser = await puppeteer.launch();
+    res.json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      port: PORT,
+      appInsights: !!appInsightsClient
+    });
+  } catch (e) {
+    logger.error({ err: e }, 'Error in status API');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Simple health endpoint
+app.get('/healthz', (req, res) => res.type('text').send('ok'));
+
+// ----------------------
+// A11y test (POST)
+// ----------------------
+app.post('/test', testLimiter, async (req, res) => {
+  const input = (req.body?.url || '').trim();
+
+  // Validate and normalize URL
+  let url;
+  try {
+    if (!validator.isURL(input, { require_protocol: true, protocols: ['http', 'https'] })) {
+      throw new Error('Please enter a valid URL starting with http:// or https://');
+    }
+    const u = new URL(input);
+    u.hash = '';
+    url = u.toString();
+  } catch (e) {
+    return res.status(400).render('index', {
+      title: 'Accessibility Test',
+      message: e.message,
+      error: e.message
+    });
+  }
+
+  // Puppeteer launch options (work locally & on Azure)
+  const isLinux = process.platform === 'linux';
+  const launchOpts = {
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--no-zygote',
+      ...(isLinux ? ['--single-process'] : [])
+    ]
+  };
+
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    launchOpts.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+
+  const navTimeoutMs = 30_000;
+  let browser;
+
+  try {
+    browser = await puppeteer.launch(launchOpts);
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2' });
+    await page.setBypassCSP(true);
+    await page.setViewport({ width: 1366, height: 900 });
+
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: navTimeoutMs });
 
     const results = await new AxePuppeteer(page)
       .configure({
         rules: {
-          'target-size': { enabled: true } // WCAG 2.2 rule
+          'target-size': { enabled: true }
         }
       })
       .analyze();
 
     await browser.close();
-    res.render('results', { results });
+
+    if (appInsightsClient) {
+      appInsightsClient.trackEvent({
+        name: 'A11yScanCompleted',
+        properties: {
+          url,
+          violations: results.violations.length,
+          passes: results.passes.length,
+          incomplete: results.incomplete.length,
+          inapplicable: results.inapplicable.length
+        }
+      });
+    }
+
+    res.render('results', {
+      title: 'Accessibility Results',
+      targetUrl: url,
+      results
+    });
   } catch (error) {
-    console.error('Accessibility test error:', error);
-    res.status(500).send(`Error testing URL: ${error.message}`);
+    logger.error({ err: error, url }, 'Accessibility test error');
+    try { if (browser) await browser.close(); } catch (_) {}
+
+    if (appInsightsClient) {
+      appInsightsClient.trackException({ exception: error });
+    }
+
+    res.status(500).render('index', {
+      title: 'Accessibility Test',
+      message: 'Something went wrong while testing the URL.',
+      error: error.message
+    });
   }
+});
+
+// ----------------------
+// 404 & Error handlers
+// ----------------------
+app.use((req, res) => {
+  res.status(404).render('404');
+});
+
+app.use((err, req, res, next) => {
+  logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
+  res.status(500).send('Internal Server Error - Check logs for details');
+});
+
+// ----------------------
+// Start server
+// ----------------------
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Application Insights: ${appInsightsClient ? 'Enabled' : 'Disabled'}`);
 });
