@@ -215,6 +215,7 @@ app.get('/api/status', (req, res) => {
 
 // Accessibility test route
 const pa11y = require('pa11y');
+const { access } = require('fs');
 
 app.post('/test', async (req, res) => {
   const url = req.body.url;
@@ -223,8 +224,9 @@ app.post('/test', async (req, res) => {
     const results = await pa11y(url, {
       standard: 'WCAG2AA',
       includeNotices: true,
-      includeWarnings: true
-    });
+      includeWarnings: true,
+      wait: 1000, // Wait for 1 second to allow page to load
+  });
 
     res.render('report', {
       title: 'Toegankelijkheidsrapport',
