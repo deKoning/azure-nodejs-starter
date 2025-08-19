@@ -1,23 +1,25 @@
 {
-  "name": "azure-nodejs-starter",
-  "version": "1.0.0",
-  "description": "A starter Node.js web application for Azure App Service",
+  "name": "azure-nodejs-a11y-tester",
+  "version": "1.1.0",
+  "description": "Node.js web app for Azure with accessibility testing using axe-puppeteer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["nodejs", "express", "azure", "web-app"],
+  "keywords": ["nodejs", "express", "azure", "web-app", "accessibility", "a11y", "axe"],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
-    "ejs": "^3.1.9"
+    "ejs": "^3.1.9",
+    "body-parser": "^1.20.2",
+    "puppeteer": "^21.3.8",
+    "axe-core": "^4.7.2",
+    "axe-puppeteer": "^3.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "express": "^4.18.2", 
-    "applicationinsights": "^2.9.1"
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -1,72 +1,68 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="stylesheet" href="/css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>&lt;%= title %&gt;</title>
+    <link href="/css/style.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"/>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <h1 class="nav-logo">
-                <i class="fas fa-cloud"></i> Azure App
+<h1 class="nav-logo">
+<i class="fas fa-cloud"></i> Azure App
             </h1>
-            <ul class="nav-menu">
-                <li><a href="/" class="nav-link active">Home</a></li>
-                <li><a href="/about" class="nav-link">About</a></li>
-                <li><a href="/api/status" class="nav-link">API Status</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <main class="main-content">
-        <div class="hero-section">
-            <div class="hero-content">
-                <h1 class="hero-title">
-                    <i class="fas fa-rocket"></i>
-                    <%= title %>
+<ul class="nav-menu">
+<li><a class="nav-link active" href="/">Home</a></li>
+<li><a class="nav-link" href="/about">About</a></li>
+<li><a class="nav-link" href="/api/status">API Status</a></li>
+</ul>
+</div>
+</nav>
+<main class="main-content">
+<div class="hero-section">
+<div class="hero-content">
+<h1 class="hero-title">
+<i class="fas fa-rocket"></i>
+                    &lt;%= title %&gt;
                 </h1>
-                <p class="hero-message"><%= message %></p>
-                
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <i class="fas fa-server"></i>
-                        <h3>Node.js & Express</h3>
-                        <p>Built with modern Node.js and Express framework</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fab fa-microsoft"></i>
-                        <h3>Azure Deployed</h3>
-                        <p>Running seamlessly on Azure App Service</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-code"></i>
-                        <h3>Ready to Customize</h3>
-                        <p>Modify this template to build your application</p>
-                    </div>
-                </div>
-
-                <div class="action-buttons">
-                    <a href="/about" class="btn btn-primary">
-                        <i class="fas fa-info-circle"></i> Learn More
+<p class="hero-message">&lt;%= message %&gt;</p>
+<div class="feature-grid">
+<div class="feature-card">
+<i class="fas fa-server"></i>
+<h3>Node.js &amp; Express</h3>
+<p>Built with modern Node.js and Express framework</p>
+</div>
+<div class="feature-card">
+<i class="fab fa-microsoft"></i>
+<h3>Azure Deployed</h3>
+<p>Running seamlessly on Azure App Service</p>
+</div>
+<div class="feature-card">
+<i class="fas fa-code"></i>
+<h3>Ready to Customize</h3>
+<p>Modify this template to build your application</p>
+</div>
+</div>
+<div class="action-buttons">
+<a class="btn btn-primary" href="/about">
+<i class="fas fa-info-circle"></i> Learn More
                     </a>
-                    <a href="/api/status" class="btn btn-secondary">
-                        <i class="fas fa-heartbeat"></i> Check Status
+<a class="btn btn-secondary" href="/api/status">
+<i class="fas fa-heartbeat"></i> Check Status
                     </a>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="footer">
-        <p>&copy; 2024 Azure Node.js App. Built with ❤️ and deployed on Azure.</p>
-    </footer>
-
-    <script src="/js/main.js"></script>
-    <!-- Add this BEFORE the app-insights.js script in ALL your .ejs files -->
-    <script>
+</div>
+</div>
+</div>
+</main>
+<footer class="footer">
+<p>© 2024 Azure Node.js App. Built with ❤️ and deployed on Azure.</p>
+</footer>
+<script src="/js/main.js"></script>
+<!-- Add this BEFORE the app-insights.js script in ALL your .ejs files -->
+<script>
       // Expose user information to JavaScript (if user is authenticated)
       <% if (typeof user !== 'undefined' && user) { %>
         window.currentUser = {
@@ -79,7 +75,5 @@
         window.currentUser = null;
       <% } %>
     </script>
-
-</body>
-</body>
+<section id="accessibility-test" style="margin-top: 2em;"><h2>Accessibility Test</h2><p>Enter a URL below to run a WCAG 2.2 accessibility test:</p><form action="/test" method="POST" style="display: flex; gap: 0.5em; flex-wrap: wrap;"><input name="url" placeholder="https://example.com" required="true" style="flex: 1; min-width: 250px; padding: 0.5em;" type="url"/><button style="padding: 0.5em 1em;" type="submit">Run A11y Test</button></form></section></body>
 </html>

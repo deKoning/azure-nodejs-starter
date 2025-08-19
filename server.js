@@ -237,3 +237,31 @@ app.listen(PORT, () => {
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Application Insights: ${client ? 'Enabled' : 'Disabled'}`);
 });
+
+
+
+const { AxePuppeteer } = require('axe-puppeteer');
+const puppeteer = require('puppeteer');
+
+app.post('/test', async (req, res) => {
+  const url = req.body.url;
+  try {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2' });
+
+    const results = await new AxePuppeteer(page)
+      .configure({
+        rules: {
+          'target-size': { enabled: true } // WCAG 2.2 rule
+        }
+      })
+      .analyze();
+
+    await browser.close();
+    res.render('results', { results });
+  } catch (error) {
+    console.error('Accessibility test error:', error);
+    res.status(500).send(`Error testing URL: ${error.message}`);
+  }
+});
