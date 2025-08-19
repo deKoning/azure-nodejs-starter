@@ -1,23 +1,31 @@
 {
   "name": "azure-nodejs-starter",
   "version": "1.0.0",
-  "description": "A starter Node.js web application for Azure App Service",
+  "description": "A starter Node.js web application for Azure App Service with accessibility testing",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["nodejs", "express", "azure", "web-app"],
+  "keywords": [
+    "nodejs",
+    "express",
+    "azure",
+    "web-app",
+    "accessibility",
+    "a11y"
+  ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "applicationinsights": "^2.9.1",
+    "body-parser": "^1.20.2",
+    "ejs": "^3.1.9",
     "express": "^4.18.2",
-    "ejs": "^3.1.9"
+    "pa11y": "^9.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1",
-    "express": "^4.18.2", 
-    "applicationinsights": "^2.9.1"
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=18.0.0"

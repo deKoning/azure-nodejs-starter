@@ -21,6 +21,8 @@
         </div>
     </nav>
 
+
+
     <main class="main-content">
         <div class="hero-section">
             <div class="hero-content">
@@ -60,26 +62,23 @@
         </div>
     </main>
 
+
+
+    <form action="/test" method="POST">
+  <label for="url">Voer een website-URL in:</label>
+  <input type="url" id="url" name="url" required placeholder="https://voorbeeld.nl">
+  <button type="submit">Start toegankelijkheidstest</button>
+</form>
+
+
     <footer class="footer">
-        <p>&copy; 2024 Azure Node.js App. Built with ❤️ and deployed on Azure.</p>
+        <p>&copy; toegankelijkheidstest.</p>
     </footer>
 
     <script src="/js/main.js"></script>
-    <!-- Add this BEFORE the app-insights.js script in ALL your .ejs files -->
-    <script>
-      // Expose user information to JavaScript (if user is authenticated)
-      <% if (typeof user !== 'undefined' && user) { %>
-        window.currentUser = {
-          oid: '<%= user.oid %>',
-          email: '<%= user.email %>',
-          name: '<%= user.name %>',
-          upn: '<%= user.upn || user.preferred_username %>'
-        };
-      <% } else { %>
-        window.currentUser = null;
-      <% } %>
-    </script>
 
+
+   
 </body>
 </body>
 </html>

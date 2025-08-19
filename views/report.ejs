@@ -1,0 +1,15 @@
+<h1>Toegankelijkheidsrapport voor <%= url %></h1>
+
+<% if (issues.length === 0) { %>
+  <p>Geen toegankelijkheidsproblemen gevonden!</p>
+<% } else { %>
+  <ul>
+    <% issues.forEach(function(issue) { %>
+      <li>
+        <strong><%= issue.message %></strong><br>
+        <em>Type: <%= issue.type %> | Code: <%= issue.code %></em><br>
+        <code>Context: <%= issue.context %></code>
+      </li>
+    <% }); %>
+  </ul>
+<% } %>

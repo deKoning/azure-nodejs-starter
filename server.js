@@ -213,6 +213,31 @@ app.get('/api/status', (req, res) => {
     }
 });
 
+// Accessibility test route
+const pa11y = require('pa11y');
+
+app.post('/test', async (req, res) => {
+  const url = req.body.url;
+
+  try {
+    const results = await pa11y(url, {
+      standard: 'WCAG2AA',
+      includeNotices: true,
+      includeWarnings: true
+    });
+
+    res.render('report', {
+      title: 'Toegankelijkheidsrapport',
+      url,
+      issues: results.issues
+    });
+  } catch (error) {
+    console.error('Fout bij uitvoeren van pa11y:', error);
+    res.status(500).send('Er ging iets mis bij het uitvoeren van de toegankelijkheidstest.');
+  }
+});
+
+
 
 // 404 handler
 app.use((req, res) => {
