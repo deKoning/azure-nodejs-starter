@@ -1,7 +1,7 @@
 {
-  "name": "azure-nodejs-starter",
+  "name": "accessibility-web-app",
   "version": "1.0.0",
-  "description": "A starter Node.js web application for Azure App Service with accessibility testing",
+  "description": "A Node.js web application for testing website accessibility using Pa11y.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,7 +15,7 @@
     "accessibility",
     "a11y"
   ],
-  "author": "Your Name",
+  "author": "Vincent de Koning",
   "license": "MIT",
   "dependencies": {
     "applicationinsights": "^2.9.1",
