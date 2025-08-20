@@ -191,15 +191,23 @@ app.post('/test', async (req, res) => {
     
     // Connect to the browser using Puppeteer
     // This is useful if you are running Puppeteer in a Docker container or similar environment
-    // Uncomment the following lines if you want to connect to an existing browser instance
-    // const puppeteer = require('puppeteer');
     
+  //  import puppeteer from "puppeteer";
+
+  //  const browser = await puppeteer.connect({
+  //    browserURL: "http://chrome:9222", // "chrome" = sidecar name
+  //  });
+
+    // If you want to launch a new browser instance instead of connecting to an existing one
     import puppeteer from "puppeteer";
 
-    const browser = await puppeteer.connect({
-      browserURL: "http://chrome:9222", // "chrome" = sidecar name
+    const browser = await puppeteer.launch({
+      executablePath: puppeteer.executablePath(), // <- uses the cache-installed Chromium
+      headless: true, // required in server environments
+      args: ["--no-sandbox", "--disable-setuid-sandbox"], // required in Azure App Service
     });
 
+    // Run the accessibility test using Pa11y
     const results = await pa11y(url, { browser });
 
     await browser.close();
