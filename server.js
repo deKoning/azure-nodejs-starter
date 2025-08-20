@@ -183,10 +183,21 @@ app.post('/test', async (req, res) => {
     const url = req.body.url;
     if (!url) return res.status(400).json({ error: 'URL is required' });
 
-    const browser = await puppeteer.launch({
+   // const browser = await puppeteer.launch({
    //   executablePath: puppeteer.executablePath('chromium'),
    //    args: ['--no-sandbox', '--disable-setuid-sandbox']
-     executablePath: "/usr/bin/google-chrome"
+  //   executablePath: "/usr/bin/google-chrome"
+  //  });
+    
+    // Connect to the browser using Puppeteer
+    // This is useful if you are running Puppeteer in a Docker container or similar environment
+    // Uncomment the following lines if you want to connect to an existing browser instance
+    // const puppeteer = require('puppeteer');
+    
+    import puppeteer from "puppeteer";
+
+    const browser = await puppeteer.connect({
+      browserURL: "http://chrome:9222", // "chrome" = sidecar name
     });
 
     const results = await pa11y(url, { browser });
