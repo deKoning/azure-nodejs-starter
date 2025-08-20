@@ -240,7 +240,7 @@ app.get('/api/status', (req, res) => {
 });
 
 // Accessibility test route
-// const pa11y = require('pa11y');
+// const pa11y = require('pa11y'); > already required above
 const { access } = require('fs');
 
 app.post('/test', async (req, res) => {
