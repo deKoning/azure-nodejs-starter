@@ -202,12 +202,18 @@ app.post('/test', async (req, res) => {
 //    import puppeteer from "puppeteer"; // wrong becouse of import, use require
     const puppeteer = require('puppeteer');
 
-
+    // added for docker
     const browser = await puppeteer.launch({
-  //    executablePath: puppeteer.executablePath(), // <- uses the cache-installed Chromium
-      headless: true, // required in server environments
-      args: ["--no-sandbox", "--disable-setuid-sandbox"], // required in Azure App Service
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath(),
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox"
+        "--disable-dev-shm-usage",  // prevents /dev/shm issues in small containers
+        "--disable-gpu"
+      ]
     });
+
 
     // Run the accessibility test using Pa11y
     const results = await pa11y(url, { browser });
