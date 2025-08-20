@@ -185,7 +185,8 @@ app.post('/test', async (req, res) => {
 
     const browser = await puppeteer.launch({
    //   executablePath: puppeteer.executablePath('chromium'),
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+   //    args: ['--no-sandbox', '--disable-setuid-sandbox']
+     executablePath: "/usr/bin/google-chrome"
     });
 
     const results = await pa11y(url, { browser });

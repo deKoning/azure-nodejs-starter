@@ -4,9 +4,9 @@
   "description": "A Node.js web application for testing website accessibility using Pa11y.",
   "main": "server.js",
   "scripts": {
+    "postinstall": "npx puppeteer browsers install chromium@latest",
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "postinstall": "npx puppeteer browsers install chromium@latest"
+    "dev": "nodemon server.js"
   },
   "keywords": [
     "nodejs",
