@@ -9,7 +9,8 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /*  background: linear-gradient(135deg, #043572 0%, #fec352 100%); */
+    background-color: #043572;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -38,7 +39,7 @@ body {
 .nav-logo {
     font-size: 1.5rem;
     font-weight: bold;
-    color: #667eea;
+    color: #043572;
 }
 
 .nav-logo i {
@@ -183,8 +184,9 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
+   /* background: linear-gradient(45deg, #FEC352, #764ba2); */
+    background-color: #FEC352;
+    color: #043572;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
