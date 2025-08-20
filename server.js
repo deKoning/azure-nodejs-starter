@@ -204,7 +204,7 @@ app.post('/test', async (req, res) => {
 
 
     const browser = await puppeteer.launch({
-      executablePath: puppeteer.executablePath(), // <- uses the cache-installed Chromium
+  //    executablePath: puppeteer.executablePath(), // <- uses the cache-installed Chromium
       headless: true, // required in server environments
       args: ["--no-sandbox", "--disable-setuid-sandbox"], // required in Azure App Service
     });
