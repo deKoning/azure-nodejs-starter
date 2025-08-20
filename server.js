@@ -21,6 +21,10 @@ const express = require('express');
 const path = require('path');
 const app = express();
 
+// Puppeteer setup (if needed for testing)
+const puppeteer = require('puppeteer');
+const pa11y = require('pa11y');  // if not already required
+
 // Set the port from environment variable or default to 3000
 const PORT = process.env.PORT || 3000;
 
@@ -172,6 +176,28 @@ app.use((req, res, next) => {
   
   next();
 });
+
+// Test route for accessibility checks
+app.post('/test', async (req, res) => {
+  try {
+    const url = req.body.url;
+    if (!url) return res.status(400).json({ error: 'URL is required' });
+
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    const results = await pa11y(url, { browser });
+
+    await browser.close();
+
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+  }
+});
+
 
 // Routes
 app.get('/', (req, res) => {
