@@ -199,7 +199,9 @@ app.post('/test', async (req, res) => {
   //  });
 
     // If you want to launch a new browser instance instead of connecting to an existing one
-    import puppeteer from "puppeteer";
+//    import puppeteer from "puppeteer"; // wrong becouse of import, use require
+    const puppeteer = require('puppeteer');
+
 
     const browser = await puppeteer.launch({
       executablePath: puppeteer.executablePath(), // <- uses the cache-installed Chromium
